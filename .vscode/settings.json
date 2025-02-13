@@ -1,0 +1,7 @@
+{
+    "liveServer.settings.port": 5001,
+    "files.associations": {
+        "vector": "cpp",
+        "cmath": "cpp"
+    }
+}
