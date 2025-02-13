@@ -7,18 +7,18 @@
 #include <math.h>
 
 #include "imgui.h"
-#include "backends/imgui_impl_sdl2.h"       // ImGui backend (SDL2)
-#include "backends/imgui_impl_opengl2.h"     // ImGui backend (OpenGL2)
+#include "backends/imgui_impl_sdl2.h"       
+#include "backends/imgui_impl_opengl2.h"     
 
 #include <vector>
 #include <cmath>
 
-// Ekran ve panel boyutları
+
 const int SCREEN_WIDTH  = 1920;
 const int SCREEN_HEIGHT = 1080;
-const int PANEL_WIDTH   = 300; // Sol panel genişliği
+const int PANEL_WIDTH   = 300; 
 
-// 3D öğe tipleri
+
 enum ObjectType {
     OBJ_NONE = 0,
     OBJ_CUBE,
@@ -26,44 +26,44 @@ enum ObjectType {
     OBJ_CONE,
     OBJ_CYLINDER,
     OBJ_SPHERE,
-    OBJ_DIR_LIGHT   // Directional Light (örn: "Sun Light")
+    OBJ_DIR_LIGHT  
 };
 
-// Sahnedeki öğe bilgisi
+
 struct SceneObject {
     ObjectType type;
     float posX, posY, posZ;
 };
 
-// Global değişkenler
-std::vector<SceneObject> sceneObjects;
-int selectedObjectIndex = -1; // Seçili obje (-1: hiçbiri)
 
-// Gizmo için global değişkenler
-int activeAxis = -1;  // 0 = X, 1 = Y, 2 = Z, -1 = none
+std::vector<SceneObject> sceneObjects;
+int selectedObjectIndex = -1; 
+
+
+int activeAxis = -1;  
 int gizmoLastMouseX = 0, gizmoLastMouseY = 0;
 
-// Kamera parametreleri
-float camX = 0.0f, camY = 5.0f, camZ = 15.0f;
-float camYaw = 0.0f;    // Yaw (radyan)
-float camPitch = 0.0f;  // Pitch (radyan)
 
-// GLU quadric pointer
+float camX = 0.0f, camY = 5.0f, camZ = 15.0f;
+float camYaw = 0.0f;   
+float camPitch = 0.0f;  
+
+
 GLUquadric* quadric = nullptr;
 
-// Global drop bilgileri
+
 bool pendingDrop = false;
-int pendingDropX = 0, pendingDropY = 0; // Bu koordinatlar, Scene penceresine göre ayarlanacak.
+int pendingDropX = 0, pendingDropY = 0; 
 ObjectType pendingDropType = OBJ_NONE;
 
-// Fonksiyon bildirimi (prototypes)
+
 void GetGroundIntersection(int mouseX, int mouseY,
                            int viewportX, int viewportY, int viewportWidth, int viewportHeight,
                            double* ix, double* iy, double* iz);
 bool ProjectWorldToScreen(double worldX, double worldY, double worldZ, double outScreen[2]);
 bool IsMouseNearLine2D(float mouseX, float mouseY, const double screenPos1[2], const double screenPos2[2], float threshold);
 
-// Projeksiyon: Dünya koordinatlarını ekran koordinatlarına projekte eder.
+
 bool ProjectWorldToScreen(double worldX, double worldY, double worldZ, double outScreen[2])
 {
     double modelview[16], projection[16];
@@ -75,11 +75,11 @@ bool ProjectWorldToScreen(double worldX, double worldY, double worldZ, double ou
     if (!gluProject(worldX, worldY, worldZ, modelview, projection, vp, &winX, &winY, &winZ))
         return false;
     outScreen[0] = winX;
-    outScreen[1] = vp[3] - winY; // OpenGL'de y-origin alt
+    outScreen[1] = vp[3] - winY; 
     return true;
 }
 
-// IsMouseNearLine2D: Fare konumunun, iki nokta arasındaki çizgi segmentine yakınlığını kontrol eder.
+
 bool IsMouseNearLine2D(float mouseX, float mouseY, const double screenPos1[2], const double screenPos2[2], float threshold)
 {
     double dx = screenPos2[0] - screenPos1[0];
@@ -97,7 +97,7 @@ bool IsMouseNearLine2D(float mouseX, float mouseY, const double screenPos1[2], c
     return (dist < threshold);
 }
 
-// GetGroundIntersection: Verilen viewport değerlerini kullanarak, y=0 düzlemiyle kesişimi hesaplar.
+
 void GetGroundIntersection(int mouseX, int mouseY,
                            int viewportX, int viewportY, int viewportWidth, int viewportHeight,
                            double* ix, double* iy, double* iz)
@@ -120,7 +120,7 @@ void GetGroundIntersection(int mouseX, int mouseY,
     *iz = nearZ + t * dirZ;
 }
 
-// --- 3D ÖĞE ÇİZİM FONKSİYONLARI ---
+
 
 void DrawCube() {
     glBegin(GL_QUADS);
@@ -173,11 +173,11 @@ void DrawCube() {
     glEnd();
 }
 
-// Diğer objeler: DrawTriangularPrism, DrawCone, DrawCylinder, DrawSphere
-void DrawTriangularPrism() { /* Mevcut kodunuz */ }
-void DrawCone() { /* Mevcut kodunuz */ }
-void DrawCylinder() { /* Mevcut kodunuz */ }
-void DrawSphere() { /* Mevcut kodunuz */ }
+
+void DrawTriangularPrism() { }
+void DrawCone() {  }
+void DrawCylinder() {  }
+void DrawSphere() {  }
 
 void DrawGrid() {
     int gridSize = 20;
@@ -196,22 +196,20 @@ void DrawGizmo(const SceneObject& obj) {
     float arrowLength = 1.0f;
     glLineWidth(3.0f);
     glBegin(GL_LINES);
-      glColor3f(1, 0, 0); // X axis (kırmızı)
+      glColor3f(1, 0, 0); 
       glVertex3f(obj.posX, obj.posY, obj.posZ);
       glVertex3f(obj.posX + arrowLength, obj.posY, obj.posZ);
-      glColor3f(0, 1, 0); // Y axis (yeşil)
+      glColor3f(0, 1, 0); 
       glVertex3f(obj.posX, obj.posY, obj.posZ);
       glVertex3f(obj.posX, obj.posY + arrowLength, obj.posZ);
-      glColor3f(0, 0, 1); // Z axis (mavi)
+      glColor3f(0, 0, 1); 
       glVertex3f(obj.posX, obj.posY, obj.posZ);
       glVertex3f(obj.posX, obj.posY, obj.posZ + arrowLength);
     glEnd();
     glLineWidth(1.0f);
 }
 
-//////////////////////
-// MAIN FUNCTION  //
-//////////////////////
+
 int main(int, char**)
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) != 0) {
@@ -237,7 +235,7 @@ int main(int, char**)
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     ImGui::StyleColorsDark();
     
-    // ImGui backend'lerini başlat (SDL2 & OpenGL2)
+ 
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL2_Init();
     
@@ -257,7 +255,7 @@ int main(int, char**)
                 goto exit_loop;
         }
         
-        // Kamera kontrolü: Klavye & fare
+        
         const Uint8* keystate = SDL_GetKeyboardState(NULL);
         float moveSpeed = 0.5f;
         if (!io.WantCaptureKeyboard) {
@@ -283,7 +281,7 @@ int main(int, char**)
             if (camPitch < -1.57f) camPitch = -1.57f;
         }
         
-        // Gizmo Picking: Eğer sol tuş basılı ve bir obje seçiliyse, gizmo oklarına yakınlığı kontrol et.
+        
         if ((mouseButtons & SDL_BUTTON(SDL_BUTTON_LEFT)) && activeAxis == -1 && selectedObjectIndex != -1) {
             SceneObject& selObj = sceneObjects[selectedObjectIndex];
             double baseScreen[2], xScreen[2], yScreen[2], zScreen[2];
@@ -307,7 +305,7 @@ int main(int, char**)
                 }
             }
         }
-        // Gizmo Dragging: Seçili obje aktif eksene göre güncellensin.
+        
         if (activeAxis != -1 && (mouseButtons & SDL_BUTTON(SDL_BUTTON_LEFT))) {
             int dx = mouseX - gizmoLastMouseX;
             int dy = mouseY - gizmoLastMouseY;
@@ -322,12 +320,12 @@ int main(int, char**)
             gizmoLastMouseY = mouseY;
         }
         
-        // Yeni ImGui çerçevesi oluştur
+        
         ImGui_ImplSDL2_NewFrame();
         ImGui_ImplOpenGL2_NewFrame();
         ImGui::NewFrame();
         
-        // --- SOL PANEL: ELEMENTS ---
+        
         ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.2f,0.2f,0.2f,1.0f));
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
         ImGui::SetNextWindowSize(ImVec2((float)PANEL_WIDTH, (float)SCREEN_HEIGHT), ImGuiCond_Always);
@@ -378,23 +376,21 @@ int main(int, char**)
         ImGui::End();
         ImGui::PopStyleColor();
         
-// --- SAHNE PENCERESİ (DROP TARGET) ---
-// Tek bir "Scene" penceresi oluşturuyoruz:
+
 ImGui::SetNextWindowPos(ImVec2((float)PANEL_WIDTH, 0), ImGuiCond_Always);
 ImGui::SetNextWindowSize(ImVec2((float)(SCREEN_WIDTH - PANEL_WIDTH), (float)SCREEN_HEIGHT), ImGuiCond_Always);
 ImGui::Begin("Scene", NULL,
     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
     ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-// Drop hedefi olarak ayarlanıyor:
+
 if (ImGui::BeginDragDropTarget()) {
     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("OBJECT_TYPE")) {
-        // Drop payload'dan obje tipini alıyoruz
+        
         ObjectType droppedType = *(const ObjectType*)payload->Data;
-        // ImGui global koordinatlarındaki fare pozisyonunu alıyoruz
+        
         ImVec2 dropPos = ImGui::GetMousePos();
-        // Drop bilgilerini pending olarak saklıyoruz, 
-        // sahne çiziminde (OpenGL viewport ayarlarında) doğru hesaplama yapılacak.
+        
         pendingDrop = true;
         pendingDropX = (int)dropPos.x;
         pendingDropY = (int)dropPos.y;
@@ -409,8 +405,7 @@ ImGui::End();
         
         ImGui::Render();
         
-       // --- 3D SAHNE ÇİZİMİ ---
-// Sahne çizimi başlamadan önce OpenGL viewport'unu ayarlıyoruz:
+       
 glViewport(PANEL_WIDTH, 0, SCREEN_WIDTH - PANEL_WIDTH, SCREEN_HEIGHT);
 glClearColor(0.1f, 0.1f, 0.1f, 1);
 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -425,9 +420,9 @@ float viewDirY = sinf(camPitch);
 float viewDirZ = -cosf(camYaw) * cosf(camPitch);
 gluLookAt(camX, camY, camZ, camX + viewDirX, camY + viewDirY, camZ + viewDirZ, 0, 1, 0);
 
-// Eğer drop bekleniyorsa, doğru viewport ayarları altında drop noktasını hesaplayıp objeyi ekliyoruz.
+
 if (pendingDrop) {
-    int viewportX = PANEL_WIDTH;  // OpenGL viewport, sahne penceresi PANEL_WIDTH'den başlıyor.
+    int viewportX = PANEL_WIDTH;  
     int viewportY = 0;
     int viewportWidth = SCREEN_WIDTH - PANEL_WIDTH;
     int viewportHeight = SCREEN_HEIGHT;
@@ -440,11 +435,11 @@ if (pendingDrop) {
     pendingDrop = false;
 }
         
-        // Wireframe grid (landscape)
+        
         glDisable(GL_LIGHTING);
         DrawGrid();
         
-        // Directional Light (Sun Light) ayarı
+        
         bool hasDirLight = false;
         for (const auto &obj : sceneObjects) {
             if (obj.type == OBJ_DIR_LIGHT) {
@@ -463,7 +458,7 @@ if (pendingDrop) {
         if (!hasDirLight)
             glDisable(GL_LIGHTING);
         
-        // Sahnedeki diğer objeleri çiz (Sun Light hariç)
+        
         for (size_t i = 0; i < sceneObjects.size(); i++) {
             if (sceneObjects[i].type != OBJ_DIR_LIGHT) {
                 glPushMatrix();
@@ -481,7 +476,7 @@ if (pendingDrop) {
         }
         glDisable(GL_LIGHTING);
         
-        // Seçili obje varsa, gizmo çizimi
+        
         if (selectedObjectIndex != -1) {
             glDisable(GL_DEPTH_TEST);
             DrawGizmo(sceneObjects[selectedObjectIndex]);
