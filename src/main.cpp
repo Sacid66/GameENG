@@ -7,8 +7,8 @@
 #include <math.h>
 
 #include "imgui.h"
-#include "backends/imgui_impl_sdl2.h"       
-#include "backends/imgui_impl_opengl2.h"     
+#include "backends/imgui_impl_sdl2.h"
+#include "backends/imgui_impl_opengl2.h"
 
 #include <vector>
 #include <cmath>
@@ -26,7 +26,7 @@ enum ObjectType {
     OBJ_CONE,
     OBJ_CYLINDER,
     OBJ_SPHERE,
-    OBJ_DIR_LIGHT  
+    OBJ_DIR_LIGHT   
 };
 
 
@@ -64,6 +64,7 @@ bool ProjectWorldToScreen(double worldX, double worldY, double worldZ, double ou
 bool IsMouseNearLine2D(float mouseX, float mouseY, const double screenPos1[2], const double screenPos2[2], float threshold);
 
 
+
 bool ProjectWorldToScreen(double worldX, double worldY, double worldZ, double outScreen[2])
 {
     double modelview[16], projection[16];
@@ -88,8 +89,8 @@ bool IsMouseNearLine2D(float mouseX, float mouseY, const double screenPos1[2], c
     double t = 0;
     if (length2 > 1e-6) {
         t = ((mouseX - screenPos1[0]) * dx + (mouseY - screenPos1[1]) * dy) / length2;
-        if(t < 0) t = 0;
-        if(t > 1) t = 1;
+        if (t < 0) t = 0;
+        if (t > 1) t = 1;
     }
     double projX = screenPos1[0] + t * dx;
     double projY = screenPos1[1] + t * dy;
@@ -173,28 +174,89 @@ void DrawCube() {
     glEnd();
 }
 
+void DrawTriangularPrism() {
+    glColor3f(0.7f, 0.3f, 0.2f);
+    float x1 = -0.5f, z1 = -0.5f;
+    float x2 = 0.5f,  z2 = -0.5f;
+    float x3 = 0.0f,  z3 = 0.5f;
+    float y_bottom = -0.5f;
+    float y_top = 0.5f;
+    
+    glBegin(GL_TRIANGLES);
+      glVertex3f(x1, y_bottom, z1);
+      glVertex3f(x2, y_bottom, z2);
+      glVertex3f(x3, y_bottom, z3);
+    glEnd();
+    
+    glBegin(GL_TRIANGLES);
+      glVertex3f(x1, y_top, z1);
+      glVertex3f(x3, y_top, z3);
+      glVertex3f(x2, y_top, z2);
+    glEnd();
+    
+    glBegin(GL_QUADS);
+      glVertex3f(x1, y_bottom, z1);
+      glVertex3f(x2, y_bottom, z2);
+      glVertex3f(x2, y_top, z2);
+      glVertex3f(x1, y_top, z1);
+    glEnd();
+    
+    glBegin(GL_QUADS);
+      glVertex3f(x2, y_bottom, z2);
+      glVertex3f(x3, y_bottom, z3);
+      glVertex3f(x3, y_top, z3);
+      glVertex3f(x2, y_top, z2);
+    glEnd();
+    
+    glBegin(GL_QUADS);
+      glVertex3f(x3, y_bottom, z3);
+      glVertex3f(x1, y_bottom, z1);
+      glVertex3f(x1, y_top, z1);
+      glVertex3f(x3, y_top, z3);
+    glEnd();
+}
 
-void DrawTriangularPrism() { }
-void DrawCone() {  }
-void DrawCylinder() {  }
-void DrawSphere() {  }
+void DrawCone() {
+    glPushMatrix();
+    glRotatef(-90, 1, 0, 0);
+    glColor3f(1.0f, 0.5f, 0.0f);
+    gluCylinder(quadric, 0.5, 0.0, 1.0, 20, 20);
+    gluDisk(quadric, 0.0, 0.5, 20, 1);
+    glPopMatrix();
+}
+
+void DrawCylinder() {
+    glPushMatrix();
+    glRotatef(-90, 1, 0, 0);
+    glColor3f(0.0f, 0.5f, 1.0f);
+    gluCylinder(quadric, 0.5, 0.5, 1.0, 20, 20);
+    gluDisk(quadric, 0.0, 0.5, 20, 1);
+    glTranslatef(0, 0, 1.0);
+    gluDisk(quadric, 0.0, 0.5, 20, 1);
+    glPopMatrix();
+}
+
+void DrawSphere() {
+    glColor3f(0.9f, 0.1f, 0.1f);
+    gluSphere(quadric, 0.5, 20, 20);
+}
 
 void DrawGrid() {
     int gridSize = 20;
     glColor3f(0.5f, 0.5f, 0.5f);
     glBegin(GL_LINES);
-    for (int i = -gridSize; i <= gridSize; i++) {
-        glVertex3f((float)i, 0.0f, (float)-gridSize);
-        glVertex3f((float)i, 0.0f, (float)gridSize);
-        glVertex3f((float)-gridSize, 0.0f, (float)i);
-        glVertex3f((float)gridSize, 0.0f, (float)i);
-    }
+      for (int i = -gridSize; i <= gridSize; i++) {
+          glVertex3f((float)i, 0.0f, (float)-gridSize);
+          glVertex3f((float)i, 0.0f, (float)gridSize);
+          glVertex3f((float)-gridSize, 0.0f, (float)i);
+          glVertex3f((float)gridSize, 0.0f, (float)i);
+      }
     glEnd();
 }
 
 void DrawGizmo(const SceneObject& obj) {
     float arrowLength = 1.0f;
-    glLineWidth(3.0f);
+    glLineWidth(5.0f);
     glBegin(GL_LINES);
       glColor3f(1, 0, 0); 
       glVertex3f(obj.posX, obj.posY, obj.posZ);
@@ -235,11 +297,12 @@ int main(int, char**)
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     ImGui::StyleColorsDark();
     
- 
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL2_Init();
     
     quadric = gluNewQuadric();
+    
+    static bool wasLeftMouseDown = false;
     
     while (true)
     {
@@ -256,6 +319,12 @@ int main(int, char**)
         }
         
         
+        int mouseX, mouseY;
+        Uint32 mouseButtons = SDL_GetMouseState(&mouseX, &mouseY);
+        bool leftNow = (mouseButtons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0; 
+        printf("mouseX=%d mouseY=%d wantMouse=%d leftDown=%d\n", mouseX, mouseY, io.WantCaptureMouse ? 1 : 0, leftNow ? 1 : 0);
+
+        
         const Uint8* keystate = SDL_GetKeyboardState(NULL);
         float moveSpeed = 0.5f;
         if (!io.WantCaptureKeyboard) {
@@ -269,8 +338,9 @@ int main(int, char**)
             if (keystate[SDL_SCANCODE_D]) { camX += rightX * moveSpeed; camZ += rightZ * moveSpeed; }
         }
         
-        int mouseX, mouseY;
-        Uint32 mouseButtons = SDL_GetMouseState(&mouseX, &mouseY);
+        bool leftJustPressed = (!wasLeftMouseDown && leftNow);
+        
+        
         if ((mouseButtons & SDL_BUTTON(SDL_BUTTON_RIGHT)) && !io.WantCaptureMouse) {
             int xrel, yrel;
             SDL_GetRelativeMouseState(&xrel, &yrel);
@@ -282,23 +352,32 @@ int main(int, char**)
         }
         
         
-        if ((mouseButtons & SDL_BUTTON(SDL_BUTTON_LEFT)) && activeAxis == -1 && selectedObjectIndex != -1) {
+        if (leftJustPressed && activeAxis == -1 && selectedObjectIndex != -1 && !io.WantCaptureMouse)
+        {
+            printf("Gizmo pick check: mouseX=%d mouseY=%d\n", mouseX, mouseY);
+            
             SceneObject& selObj = sceneObjects[selectedObjectIndex];
             double baseScreen[2], xScreen[2], yScreen[2], zScreen[2];
             if (ProjectWorldToScreen(selObj.posX, selObj.posY, selObj.posZ, baseScreen) &&
                 ProjectWorldToScreen(selObj.posX + 1.0, selObj.posY, selObj.posZ, xScreen) &&
                 ProjectWorldToScreen(selObj.posX, selObj.posY + 1.0, selObj.posZ, yScreen) &&
-                ProjectWorldToScreen(selObj.posX, selObj.posY, selObj.posZ + 1.0, zScreen)) {
-                float threshold = 10.0f;
+                ProjectWorldToScreen(selObj.posX, selObj.posY, selObj.posZ + 1.0, zScreen))
+            {
+                float threshold = 5.0f; 
                 if (IsMouseNearLine2D((float)mouseX, (float)mouseY, baseScreen, xScreen, threshold)) {
+                    printf("Picked X axis!\n");
                     activeAxis = 0;
                     gizmoLastMouseX = mouseX;
                     gizmoLastMouseY = mouseY;
-                } else if (IsMouseNearLine2D((float)mouseX, (float)mouseY, baseScreen, yScreen, threshold)) {
+                } 
+                else if (IsMouseNearLine2D((float)mouseX, (float)mouseY, baseScreen, yScreen, threshold)) {
+                    printf("Picked Y axis!\n");
                     activeAxis = 1;
                     gizmoLastMouseX = mouseX;
                     gizmoLastMouseY = mouseY;
-                } else if (IsMouseNearLine2D((float)mouseX, (float)mouseY, baseScreen, zScreen, threshold)) {
+                } 
+                else if (IsMouseNearLine2D((float)mouseX, (float)mouseY, baseScreen, zScreen, threshold)) {
+                    printf("Picked Z axis!\n");
                     activeAxis = 2;
                     gizmoLastMouseX = mouseX;
                     gizmoLastMouseY = mouseY;
@@ -306,19 +385,59 @@ int main(int, char**)
             }
         }
         
-        if (activeAxis != -1 && (mouseButtons & SDL_BUTTON(SDL_BUTTON_LEFT))) {
+       
+        if (leftJustPressed && activeAxis == -1 && !io.WantCaptureMouse)
+        {
+            int pickedIndex = -1;
+            float bestDist = 1e9f;
+            for (size_t i = 0; i < sceneObjects.size(); i++) {
+                double screenPos[2];
+                if (ProjectWorldToScreen(sceneObjects[i].posX, sceneObjects[i].posY, sceneObjects[i].posZ, screenPos)) {
+                    float dx = mouseX - (float)screenPos[0];
+                    float dy = mouseY - (float)screenPos[1];
+                    float dist = sqrtf(dx * dx + dy * dy);
+                    float threshold = 20.0f;
+                    if (dist < threshold && dist < bestDist) {
+                        bestDist = dist;
+                        pickedIndex = (int)i;
+                    }
+                }
+            }
+            selectedObjectIndex = pickedIndex;
+            if (pickedIndex != -1) {
+                printf("Selected object index = %d\n", pickedIndex);
+            }
+        }
+        
+        
+        if (activeAxis != -1 && leftNow && selectedObjectIndex != -1 && !io.WantCaptureMouse) {
             int dx = mouseX - gizmoLastMouseX;
             int dy = mouseY - gizmoLastMouseY;
-            float factor = 0.01f;
-            if (activeAxis == 0)
+            float factor = 0.1f; 
+            
+            printf("Dragging axis=%d dx=%d dy=%d\n", activeAxis, dx, dy);
+            
+            if (activeAxis == 0) { 
                 sceneObjects[selectedObjectIndex].posX += dx * factor;
-            else if (activeAxis == 1)
-                sceneObjects[selectedObjectIndex].posY -= dy * factor;
-            else if (activeAxis == 2)
-                sceneObjects[selectedObjectIndex].posZ += dx * factor;
+                printf(" -> Move X by %.2f\n", dx * factor);
+            }
+            else if (activeAxis == 1) { 
+                sceneObjects[selectedObjectIndex].posY -= dy * factor; 
+                printf(" -> Move Y by %.2f\n", -dy * factor);
+            }
+            else if (activeAxis == 2) { 
+                sceneObjects[selectedObjectIndex].posZ += dx * factor; 
+                printf(" -> Move Z by %.2f\n", dx * factor);
+            }
             gizmoLastMouseX = mouseX;
             gizmoLastMouseY = mouseY;
         }
+        
+        
+        if (!leftNow)
+            activeAxis = -1;
+        
+        wasLeftMouseDown = leftNow;
         
         
         ImGui_ImplSDL2_NewFrame();
@@ -331,42 +450,48 @@ int main(int, char**)
         ImGui::SetNextWindowSize(ImVec2((float)PANEL_WIDTH, (float)SCREEN_HEIGHT), ImGuiCond_Always);
         ImGui::Begin("Elements", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
             ImGui::Text("Drag and drop elements:");
-            if (ImGui::Button("Cube", ImVec2(-1, 40))) { }
+            
+            if (ImGui::Button("Cube", ImVec2(-1, 40))) {}
             if (ImGui::BeginDragDropSource()) {
                 ObjectType type = OBJ_CUBE;
                 ImGui::SetDragDropPayload("OBJECT_TYPE", &type, sizeof(ObjectType));
                 ImGui::Text("Cube");
                 ImGui::EndDragDropSource();
             }
-            if (ImGui::Button("Triangular Prism", ImVec2(-1, 40))) { }
+            
+            if (ImGui::Button("Triangular Prism", ImVec2(-1, 40))) {}
             if (ImGui::BeginDragDropSource()) {
                 ObjectType type = OBJ_TRI_PRISM;
                 ImGui::SetDragDropPayload("OBJECT_TYPE", &type, sizeof(ObjectType));
                 ImGui::Text("Triangular Prism");
                 ImGui::EndDragDropSource();
             }
-            if (ImGui::Button("Cone", ImVec2(-1, 40))) { }
+            
+            if (ImGui::Button("Cone", ImVec2(-1, 40))) {}
             if (ImGui::BeginDragDropSource()) {
                 ObjectType type = OBJ_CONE;
                 ImGui::SetDragDropPayload("OBJECT_TYPE", &type, sizeof(ObjectType));
                 ImGui::Text("Cone");
                 ImGui::EndDragDropSource();
             }
-            if (ImGui::Button("Cylinder", ImVec2(-1, 40))) { }
+            
+            if (ImGui::Button("Cylinder", ImVec2(-1, 40))) {}
             if (ImGui::BeginDragDropSource()) {
                 ObjectType type = OBJ_CYLINDER;
                 ImGui::SetDragDropPayload("OBJECT_TYPE", &type, sizeof(ObjectType));
                 ImGui::Text("Cylinder");
                 ImGui::EndDragDropSource();
             }
-            if (ImGui::Button("Sphere", ImVec2(-1, 40))) { }
+            
+            if (ImGui::Button("Sphere", ImVec2(-1, 40))) {}
             if (ImGui::BeginDragDropSource()) {
                 ObjectType type = OBJ_SPHERE;
                 ImGui::SetDragDropPayload("OBJECT_TYPE", &type, sizeof(ObjectType));
                 ImGui::Text("Sphere");
                 ImGui::EndDragDropSource();
             }
-            if (ImGui::Button("Sun Light", ImVec2(-1, 40))) { }
+            
+            if (ImGui::Button("Sun Light", ImVec2(-1, 40))) {}
             if (ImGui::BeginDragDropSource()) {
                 ObjectType type = OBJ_DIR_LIGHT;
                 ImGui::SetDragDropPayload("OBJECT_TYPE", &type, sizeof(ObjectType));
@@ -376,64 +501,63 @@ int main(int, char**)
         ImGui::End();
         ImGui::PopStyleColor();
         
-
-ImGui::SetNextWindowPos(ImVec2((float)PANEL_WIDTH, 0), ImGuiCond_Always);
-ImGui::SetNextWindowSize(ImVec2((float)(SCREEN_WIDTH - PANEL_WIDTH), (float)SCREEN_HEIGHT), ImGuiCond_Always);
-ImGui::Begin("Scene", NULL,
-    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-    ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
-
-if (ImGui::BeginDragDropTarget()) {
-    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("OBJECT_TYPE")) {
-        
-        ObjectType droppedType = *(const ObjectType*)payload->Data;
-        
-        ImVec2 dropPos = ImGui::GetMousePos();
-        
-        pendingDrop = true;
-        pendingDropX = (int)dropPos.x;
-        pendingDropY = (int)dropPos.y;
-        pendingDropType = droppedType;
-    }
-    ImGui::EndDragDropTarget();
-}
-ImGui::End();
-
-
-
+       
+        ImGui::SetNextWindowPos(ImVec2((float)PANEL_WIDTH, 0), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2((float)(SCREEN_WIDTH - PANEL_WIDTH), (float)SCREEN_HEIGHT), ImGuiCond_Always);
+        ImGui::SetNextWindowBgAlpha(0.0f);
+        ImGui::Begin("Scene", NULL,
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+            ImGui::InvisibleButton("SceneArea", ImGui::GetContentRegionAvail());
+            if (ImGui::BeginDragDropTarget()) {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("OBJECT_TYPE")) {
+                    ObjectType droppedType = *(const ObjectType*)payload->Data;
+                    ImVec2 dropPos = ImGui::GetMousePos();
+                    pendingDrop = true;
+                    pendingDropX = (int)dropPos.x;
+                    pendingDropY = (int)dropPos.y;
+                    pendingDropType = droppedType;
+                }
+                ImGui::EndDragDropTarget();
+            }
+        ImGui::End();
         
         ImGui::Render();
         
-       
-glViewport(PANEL_WIDTH, 0, SCREEN_WIDTH - PANEL_WIDTH, SCREEN_HEIGHT);
-glClearColor(0.1f, 0.1f, 0.1f, 1);
-glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-glEnable(GL_DEPTH_TEST);
-glMatrixMode(GL_PROJECTION);
-glLoadIdentity();
-gluPerspective(45.0, (double)(SCREEN_WIDTH - PANEL_WIDTH) / SCREEN_HEIGHT, 0.1, 1000.0);
-glMatrixMode(GL_MODELVIEW);
-glLoadIdentity();
-float viewDirX = sinf(camYaw) * cosf(camPitch);
-float viewDirY = sinf(camPitch);
-float viewDirZ = -cosf(camYaw) * cosf(camPitch);
-gluLookAt(camX, camY, camZ, camX + viewDirX, camY + viewDirY, camZ + viewDirZ, 0, 1, 0);
-
-
-if (pendingDrop) {
-    int viewportX = PANEL_WIDTH;  
-    int viewportY = 0;
-    int viewportWidth = SCREEN_WIDTH - PANEL_WIDTH;
-    int viewportHeight = SCREEN_HEIGHT;
-    double ix, iy, iz;
-    GetGroundIntersection(pendingDropX, pendingDropY,
-                          viewportX, viewportY, viewportWidth, viewportHeight,
-                          &ix, &iy, &iz);
-    sceneObjects.push_back({ pendingDropType, (float)ix, (float)iy, (float)iz });
-    selectedObjectIndex = sceneObjects.size() - 1;
-    pendingDrop = false;
-}
+        
+        glViewport(PANEL_WIDTH, 0, SCREEN_WIDTH - PANEL_WIDTH, SCREEN_HEIGHT);
+        glClearColor(0.1f, 0.1f, 0.1f, 1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_DEPTH_TEST);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        gluPerspective(45.0, (double)(SCREEN_WIDTH - PANEL_WIDTH) / SCREEN_HEIGHT, 0.1, 1000.0);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        
+        float viewDirX = sinf(camYaw) * cosf(camPitch);
+        float viewDirY = sinf(camPitch);
+        float viewDirZ = -cosf(camYaw) * cosf(camPitch);
+        gluLookAt(camX, camY, camZ, camX + viewDirX, camY + viewDirY, camZ + viewDirZ, 0, 1, 0);
+        
+        
+        if (pendingDrop) {
+            int viewportX = PANEL_WIDTH;
+            int viewportY = 0;
+            int viewportWidth = SCREEN_WIDTH - PANEL_WIDTH;
+            int viewportHeight = SCREEN_HEIGHT;
+            double ix, iy, iz;
+            GetGroundIntersection(pendingDropX, pendingDropY,
+                                  viewportX, viewportY, viewportWidth, viewportHeight,
+                                  &ix, &iy, &iz);
+            sceneObjects.push_back({ pendingDropType, (float)ix, (float)iy, (float)iz });
+            selectedObjectIndex = (int)sceneObjects.size() - 1;
+            pendingDrop = false;
+            
+            wasLeftMouseDown = false;
+            printf("Dropped new object, index=%d, pos=%.2f,%.2f,%.2f\n",
+                   selectedObjectIndex, ix, iy, iz);
+        }
         
         
         glDisable(GL_LIGHTING);
@@ -441,7 +565,7 @@ if (pendingDrop) {
         
         
         bool hasDirLight = false;
-        for (const auto &obj : sceneObjects) {
+        for (auto &obj : sceneObjects) {
             if (obj.type == OBJ_DIR_LIGHT) {
                 hasDirLight = true;
                 float lightDir[4] = { obj.posX, obj.posY, obj.posZ, 0.0f };
